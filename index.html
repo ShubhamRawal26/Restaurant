@@ -363,7 +363,7 @@
             <form id="admin-login-form" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1">Admin ID</label>
-                    <input type="text" id="admin-id" required class="w-full bg-dark-950 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors">
+                    <input type="text" id="admin-id" required autocapitalize="off" autocomplete="off" class="w-full bg-dark-950 border border-dark-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand-500 transition-colors">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-1">Password</label>
@@ -373,9 +373,6 @@
                     Login
                 </button>
             </form>
-            <div class="mt-4 text-center">
-                <p class="text-xs text-gray-500">Hint: ID is 'admin', Password is 'taste2026'</p>
-            </div>
         </div>
     </div>
 
@@ -638,8 +635,9 @@
         // Admin Login Handling
         document.getElementById('admin-login-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const id = document.getElementById('admin-id').value;
-            const pass = document.getElementById('admin-pass').value;
+            // Automatically remove extra spaces and ignore uppercase letters
+            const id = document.getElementById('admin-id').value.trim().toLowerCase();
+            const pass = document.getElementById('admin-pass').value.trim();
 
             // Simple hardcoded check (For production, use Firebase Auth Email/Password)
             if (id === 'admin' && pass === 'taste2026') {
@@ -737,6 +735,7 @@
 
         // Customer Panel Logic (See their own bookings)
         let unsubscribeCustomer = null;
+        let knownCustomerReservations = {};
 
         function setupCustomerListener() {
             if (!currentUser) return;
@@ -766,6 +765,21 @@
             const section = document.getElementById('customer-bookings-section');
             const list = document.getElementById('customer-bookings-list');
             
+            let shouldPlaySound = false;
+
+            data.forEach(item => {
+                // Detect status change from Pending to Confirmed to play sound
+                if (item.status === 'Confirmed' && knownCustomerReservations[item.id] === 'Pending') {
+                    shouldPlaySound = true;
+                }
+                knownCustomerReservations[item.id] = item.status;
+            });
+
+            if (shouldPlaySound) {
+                const successAudio = new Audio('https://actions.google.com/sounds/v1/ui/bell_ding.ogg');
+                successAudio.play().catch(err => console.log('Audio play blocked:', err));
+            }
+
             if (data.length === 0) {
                 section.classList.add('hidden');
                 return;
